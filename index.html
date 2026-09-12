@@ -202,7 +202,6 @@
 </head>
 <body>
 
-<audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
 <button id="musicToggle" class="music-toggle" type="button">Music: off</button>
 
 <div class="wrap">
@@ -253,30 +252,15 @@
       <h2>Where should I take you?</h2>
       <p>Some ideas around Wichita, pick one, or tell me yours.</p>
       <div class="grid" id="meetingChoices">
-        <button class="choice" data-meeting="Greater Grounds Coffee &amp; Co">
-          Coffee at Greater Grounds
-          <span class="sub">coffee shop, good pastries</span>
-        </button>
-        <button class="choice" data-meeting="Braums Ice Cream &amp; Treats">
-          Ice cream at Braums
-          <span class="sub">Old-fashioned shop, games upstairs</span>
-        </button>
-        <button class="choice" data-meeting="Botanica, The Wichita Gardens">
-          A walk through Botanica
-          <span class="sub">Wichita's botanical gardens</span>
-        </button>
-        <button class="choice" data-meeting="Old Town Square">
-          Evening in Old Town
-          <span class="sub">Walk around, grab some food</span>
-        </button>
-        <button class="choice" data-meeting="The Arcade">
-          Arcade night
-          <span class="sub">Retro games and pinball, Old Town</span>
-        </button>
-        <button class="choice" data-meeting="Surprise me">
-          Surprise me
-          <span class="sub">I'll figure something out</span>
-        </button>
+        <button class="choice" data-meeting="Keeper of the Plains">Keeper of the Plains</button>
+        <button class="choice" data-meeting="Botanica Wichita">Botanica Wichita</button>
+        <button class="choice" data-meeting="Old Cowtown Museum">Old Cowtown Museum</button>
+        <button class="choice" data-meeting="Old Town Wichita">Old Town Wichita</button>
+        <button class="choice" data-meeting="Museum of World Treasures">Museum of World Treasures</button>
+        <button class="choice" data-meeting="The Arcade">The Arcade</button>
+        <button class="choice" data-meeting="Exploration Place">Exploration Place</button>
+        <button class="choice" data-meeting="Round1 Bowling & Arcade">Round1 Bowling & Arcade</button>
+        <button class="choice" data-meeting="Surprise me">Surprise me</button>
       </div>
       <label for="customPlace">Or tell me your idea</label>
       <input id="customPlace" placeholder="Type here" />
@@ -383,11 +367,28 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function sendProgress(type) {
-    if (OWNER_EMAIL === "kipkoechbethwel721@gmail.com") return;
+  function sendProgress(type) {
+    if (!OWNER_EMAIL || OWNER_EMAIL.includes("YOUR_EMAIL")) return;
+
+    let iframe = document.getElementById("mailSink");
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "mailSink";
+      iframe.name = "mailSink";
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `https://formsubmit.co/${OWNER_EMAIL}`;
+    form.target = "mailSink";
+    form.style.display = "none";
 
     const data = {
       _subject: "New bestie response",
+      _captcha: "false",
+      _template: "table",
       Step: type,
       Likes_me: state.like || "",
       Meeting_place: state.meeting || "",
@@ -397,33 +398,75 @@
       Message: state.note || ""
     };
 
-    try {
-      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(OWNER_EMAIL)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(data),
-        keepalive: true
-      });
-    } catch (e) {}
+    Object.entries(data).forEach(([name, value]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => form.remove(), 2500);
   }
 
-  // --- Background music ---
-  const bgMusic = document.getElementById("bgMusic");
+  // --- Background music generated in the browser ---
   const musicToggle = document.getElementById("musicToggle");
+  let audioCtx = null;
+  let musicTimer = null;
+  let musicOn = false;
+  let melodyIndex = 0;
+  const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
 
-  function updateMusicToggle() {
-    musicToggle.textContent = bgMusic.paused ? "Music: off" : "Music: on";
+  function playSoftNote(freq) {
+    if (!audioCtx || audioCtx.state !== "running") return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 1.25);
   }
-  musicToggle.addEventListener("click", () => {
-    if (bgMusic.paused) bgMusic.play().catch(() => {});
-    else bgMusic.pause();
+
+  async function startMusic() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    if (musicOn) return;
+
+    musicOn = true;
+    musicToggle.textContent = "Music: on";
+    playSoftNote(melody[melodyIndex++ % melody.length]);
+
+    musicTimer = setInterval(() => {
+      playSoftNote(melody[melodyIndex++ % melody.length]);
+    }, 900);
+  }
+
+  function stopMusic() {
+    musicOn = false;
+    musicToggle.textContent = "Music: off";
+    if (musicTimer) {
+      clearInterval(musicTimer);
+      musicTimer = null;
+    }
+  }
+
+  musicToggle.addEventListener("click", async () => {
+    if (musicOn) stopMusic();
+    else await startMusic();
   });
-  bgMusic.addEventListener("play", updateMusicToggle);
-  bgMusic.addEventListener("pause", updateMusicToggle);
-  updateMusicToggle();
 
   function startExperience() {
-    bgMusic.play().catch(() => {});
+    startMusic().catch(() => {});
     go(2);
   }
 
