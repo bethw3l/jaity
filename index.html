@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>For You</title>
+<meta name="description" content="A little something made just for you." />
+<meta property="og:title" content="For You" />
+<meta property="og:description" content="I made you something. Open it." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23e86f5d' d='M16 29S3 20.6 3 11.8C3 6.9 6.9 3 11.7 3c2.4 0 4.6 1.2 5.9 3.1a7 7 0 0 1 5.9-3.1C28.1 3 32 6.9 32 11.8 32 20.6 16 29 16 29z'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fff8f4;
+    --card: #fff;
+    --ink: #2c2522;
+    --muted: #756964;
+    --accent: #e86f5d;
+    --line: #eadfd9;
+    --soft: #fff1eb;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Work Sans", Arial, Helvetica, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: linear-gradient(135deg, #fff8f4, #ffece4);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 760px; margin: auto; padding: 28px 16px 50px; }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 18px 45px rgba(70, 50, 40, .12);
+  }
+
+  .step { display: none; }
+  .step.active { display: block; animation: stepIn .4s ease; }
+
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step.active { animation: none; }
+  }
+
+  h1, h2 { font-family: var(--font-display); margin: 0 0 14px; font-weight: 600; line-height: 1.15; }
+  h1 { font-size: clamp(2.1rem, 6vw, 3.6rem); }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); }
+  p { color: var(--muted); line-height: 1.55; }
+
+  .btn, .choice {
+    border: 0;
+    border-radius: 14px;
+    padding: 13px 18px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn:focus-visible, .choice:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .primary { background: var(--accent); color: #fff; }
+  .secondary { background: #f4ece8; color: #4e423d; }
+  .ghost { background: #fff; border: 1px solid var(--line); color: #4e423d; }
+
+  .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .choice {
+    background: #fff;
+    border: 1px solid var(--line);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .choice .sub { font-size: .78rem; color: var(--muted); font-weight: 500; }
+  .choice.selected { background: var(--soft); border-color: var(--accent); }
+
+  label { display: block; font-weight: 600; margin: 16px 0 7px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    font: inherit;
+    background: #fff;
+  }
+
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; margin-top: 16px; }
+  .dow { text-align: center; font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .day {
+    min-height: 48px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #fff;
+    color: #b7ada8;
+    font-weight: 600;
+    font: inherit;
+  }
+  .day.enabled { color: var(--ink); cursor: pointer; }
+  .day.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .day.empty { border-color: transparent; background: transparent; }
+
+  .monthbar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+
+  .no-zone { position: relative; min-height: 76px; margin-top: 14px; }
+  #noBtn { position: absolute; left: 115px; top: 0; }
+
+  .summary, .outfit {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #fff8f5;
+    border: 1px solid var(--line);
+  }
+  .summary div { padding: 7px 0; border-bottom: 1px solid #eee4df; }
+  .summary div:last-child { border-bottom: 0; }
+
+  .progress { height: 6px; background: #f1e6e0; border-radius: 999px; margin-bottom: 24px; overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 14%; background: var(--accent); transition: width .2s; }
+
+  .small { font-size: .85rem; }
+
+  .music-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(70, 50, 40, .08);
+  }
+
+  /* Reasons step */
+  .reason-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 18px; }
+  .reason-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #fff8f5;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .reason-num { font-family: var(--font-display); font-size: 1.3rem; color: var(--accent); font-weight: 600; line-height: 1.3; flex-shrink: 0; }
+  .reason-card p { margin: 0; color: var(--ink); }
+
+  /* Celebration hearts on the last step */
+  .floating-heart {
+    position: fixed;
+    bottom: -20px;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 20;
+    animation: floatHeart ease-in forwards;
+  }
+  @keyframes floatHeart {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(-110vh) translateX(var(--drift, 0px)); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .floating-heart { display: none; }
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    .card { padding: 22px; }
+    .day { min-height: 42px; font-size: .9rem; }
+    .music-toggle { top: 10px; right: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
+<button id="musicToggle" class="music-toggle" type="button">Music: off</button>
+
+<div class="wrap">
+  <div class="card">
+    <div class="progress"><span id="progressBar"></span></div>
+
+    <section class="step active" data-step="1">
+      <h1>When I met you, I didn't know I'd end up liking you this much.</h1>
+      <p id="heroSub" data-text="You became one of my favorite people without even trying."></p>
+      <div class="buttons">
+        <button class="btn primary" onclick="startExperience()">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="2">
+      <h2>A few reasons, before I ask</h2>
+      <p>Just so you know where I'm coming from.</p>
+      <div class="reason-grid">
+        <div class="reason-card">
+          <span class="reason-num">01</span>
+          <p>The way you laugh at your own jokes before you even finish them.</p>
+        </div>
+        <div class="reason-card">
+          <span class="reason-num">02</span>
+          <p>How easy it is to talk to you about anything.</p>
+        </div>
+        <div class="reason-card">
+          <span class="reason-num">03</span>
+          <p>You make ordinary days feel like a good idea.</p>
+        </div>
+      </div>
+      <div class="buttons">
+        <button class="btn ghost" onclick="go(1)">Back</button>
+        <button class="btn primary" onclick="go(3)">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="3">
+      <h2>Be honest… do you like me too?</h2>
+      <p>I already know my answer.</p>
+      <div class="no-zone" id="noZone">
+        <button class="btn primary" onclick="setLike('Yes')">Yes</button>
+        <button class="btn secondary" id="noBtn">No</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="4">
+      <h2>Where should I take you?</h2>
+      <p>Some ideas around Wichita — pick one, or tell me yours.</p>
+      <div class="grid" id="meetingChoices">
+        <button class="choice" data-meeting="Greater Grounds Coffee &amp; Co">
+          Coffee at Greater Grounds
+          <span class="sub">Old Town coffee shop, good pastries</span>
+        </button>
+        <button class="choice" data-meeting="Papa's Ice Cream &amp; Treats">
+          Ice cream at Papa's
+          <span class="sub">Old-fashioned shop, games upstairs</span>
+        </button>
+        <button class="choice" data-meeting="Botanica, The Wichita Gardens">
+          A walk through Botanica
+          <span class="sub">Wichita's botanical gardens</span>
+        </button>
+        <button class="choice" data-meeting="Old Town Square">
+          Evening in Old Town
+          <span class="sub">Walk around, grab food, people-watch</span>
+        </button>
+        <button class="choice" data-meeting="The Arcade">
+          Arcade night
+          <span class="sub">Retro games and pinball, Old Town</span>
+        </button>
+        <button class="choice" data-meeting="Surprise me">
+          Surprise me
+          <span class="sub">I'll figure something out</span>
+        </button>
+      </div>
+      <label for="customPlace">Or tell me your idea</label>
+      <input id="customPlace" placeholder="Type here" />
+      <div class="buttons">
+        <button class="btn ghost" onclick="go(3)">Back</button>
+        <button class="btn primary" onclick="saveMeeting()">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="5">
+      <h2>When are you free for me?</h2>
+      <p>I'm free Thursday evenings, and all day Friday and Saturday.</p>
+      <div class="monthbar">
+        <button class="btn ghost" onclick="changeMonth(-1)">‹</button>
+        <strong id="monthTitle"></strong>
+        <button class="btn ghost" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="calendar" id="calendar"></div>
+      <div class="buttons">
+        <button class="btn ghost" onclick="go(4)">Back</button>
+        <button class="btn primary" onclick="dateNext()">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="6">
+      <h2>What time works for you?</h2>
+      <label for="timeSelect">Choose a time</label>
+      <select id="timeSelect"></select>
+      <div class="buttons">
+        <button class="btn ghost" onclick="go(5)">Back</button>
+        <button class="btn primary" onclick="timeNext()">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="7">
+      <h2>What kind of vibe do you want?</h2>
+      <p>I want you comfortable, but I also want you looking too good.</p>
+      <label for="mood">Vibe</label>
+      <select id="mood">
+        <option>Casual</option>
+        <option>Cute</option>
+        <option>A little dressed up</option>
+        <option>Surprise me</option>
+      </select>
+
+      <label for="note">Anything you want to tell me?</label>
+      <textarea id="note" rows="4" placeholder="Say anything"></textarea>
+
+      <div class="buttons">
+        <button class="btn ghost" onclick="go(6)">Back</button>
+        <button class="btn primary" onclick="finishForm()">Finish</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="8">
+      <h2>Perfect.</h2>
+      <p>Now I have something to look forward to.</p>
+      <div class="summary" id="summary"></div>
+      <div class="outfit">
+        <strong>What to wear</strong>
+        <p id="outfitText"></p>
+        <p class="small" style="margin-bottom:0">Honestly, wear whatever makes you feel good. I'm already going to be happy to see you.</p>
+      </div>
+      <div class="buttons">
+        <a id="icsLink" class="btn ghost" download="our-date.ics">Add to calendar</a>
+        <button class="btn ghost" onclick="go(1)">Start over</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const OWNER_EMAIL = "YOUR_EMAIL@example.com";
+
+  // Which weekdays are open, and what times exist on each.
+  // 0 = Sunday ... 4 = Thursday, 5 = Friday, 6 = Saturday
+  const TIME_SLOTS = {
+    4: ["5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM"],
+    5: ["9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM"],
+    6: ["9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM"]
+  };
+  const ENABLED_DOWS = Object.keys(TIME_SLOTS).map(Number);
+
+  const state = {
+    like: "",
+    meeting: "",
+    date: "",
+    time: "",
+    mood: "",
+    note: ""
+  };
+
+  let currentStep = 1;
+  const TOTAL_STEPS = 8;
+  let viewDate = new Date();
+  viewDate.setDate(1);
+
+  function go(n) {
+    currentStep = n;
+    document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+    document.querySelector(`[data-step="${n}"]`).classList.add("active");
+    document.getElementById("progressBar").style.width = `${(n / TOTAL_STEPS) * 100}%`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function sendProgress(type) {
+    if (OWNER_EMAIL === "YOUR_EMAIL@example.com") return;
+
+    const data = {
+      _subject: "New bestie response",
+      Step: type,
+      Likes_me: state.like || "",
+      Meeting_place: state.meeting || "",
+      Date: state.date || "",
+      Time: state.time || "",
+      Vibe: state.mood || "",
+      Message: state.note || ""
+    };
+
+    try {
+      await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(OWNER_EMAIL)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(data),
+        keepalive: true
+      });
+    } catch (e) {}
+  }
+
+  // --- Background music ---
+  const bgMusic = document.getElementById("bgMusic");
+  const musicToggle = document.getElementById("musicToggle");
+
+  function updateMusicToggle() {
+    musicToggle.textContent = bgMusic.paused ? "Music: off" : "Music: on";
+  }
+  musicToggle.addEventListener("click", () => {
+    if (bgMusic.paused) bgMusic.play().catch(() => {});
+    else bgMusic.pause();
+  });
+  bgMusic.addEventListener("play", updateMusicToggle);
+  bgMusic.addEventListener("pause", updateMusicToggle);
+  updateMusicToggle();
+
+  function startExperience() {
+    bgMusic.play().catch(() => {});
+    go(2);
+  }
+
+  // --- Step 1: typewriter reveal for the opening line ---
+  function typeText(el, text, speed) {
+    el.textContent = "";
+    let i = 0;
+    (function step() {
+      if (i <= text.length) {
+        el.textContent = text.slice(0, i);
+        i++;
+        setTimeout(step, speed);
+      }
+    })();
+  }
+  const heroSub = document.getElementById("heroSub");
+  setTimeout(() => typeText(heroSub, heroSub.dataset.text, 30), 400);
+
+  // --- Step 3: like question, with a dodging "No" button ---
+  function setLike(value) {
+    state.like = value;
+    sendProgress("Like question answered");
+    go(4);
+  }
+
+  const noBtn = document.getElementById("noBtn");
+  const noZone = document.getElementById("noZone");
+
+  function dodgeNo() {
+    const maxX = Math.max(0, noZone.clientWidth - noBtn.offsetWidth - 8);
+    const maxY = Math.max(0, noZone.clientHeight - noBtn.offsetHeight - 4);
+    noBtn.style.left = Math.floor(Math.random() * maxX) + "px";
+    noBtn.style.top = Math.floor(Math.random() * maxY) + "px";
+  }
+  ["mouseenter", "pointerdown", "touchstart"].forEach(evt => {
+    noBtn.addEventListener(evt, e => {
+      e.preventDefault();
+      dodgeNo();
+    });
+  });
+
+  // --- Step 4: meeting place ---
+  document.querySelectorAll("#meetingChoices .choice").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#meetingChoices .choice").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      state.meeting = btn.dataset.meeting;
+      document.getElementById("customPlace").value = "";
+      sendProgress("Meeting place selected");
+    });
+  });
+
+  document.getElementById("customPlace").addEventListener("change", e => {
+    const v = e.target.value.trim();
+    if (v) {
+      state.meeting = v;
+      document.querySelectorAll("#meetingChoices .choice").forEach(b => b.classList.remove("selected"));
+      sendProgress("Custom meeting place entered");
+    }
+  });
+
+  function saveMeeting() {
+    const custom = document.getElementById("customPlace").value.trim();
+    if (custom) state.meeting = custom;
+    if (!state.meeting) { alert("Choose a place first."); return; }
+    sendProgress("Meeting step completed");
+    go(5);
+  }
+
+  // --- Step 5: date ---
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function isoDate(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+
+  function renderCalendar() {
+    const cal = document.getElementById("calendar");
+    cal.innerHTML = "";
+    const y = viewDate.getFullYear();
+    const m = viewDate.getMonth();
+
+    document.getElementById("monthTitle").textContent =
+      viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(d => {
+      const x = document.createElement("div");
+      x.className = "dow";
+      x.textContent = d;
+      cal.appendChild(x);
+    });
+
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    for (let i = 0; i < firstDay; i++) {
+      const x = document.createElement("div");
+      x.className = "day empty";
+      cal.appendChild(x);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(y, m, d);
+      const dow = date.getDay();
+      const enabled = ENABLED_DOWS.includes(dow) && date >= today;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "day" + (enabled ? " enabled" : "");
+      btn.textContent = d;
+
+      const iso = isoDate(date);
+      if (state.date === iso) btn.classList.add("selected");
+
+      if (enabled) {
+        btn.onclick = () => {
+          state.date = iso;
+          state.time = "";
+          renderCalendar();
+          sendProgress("Date selected");
+        };
+      } else {
+        btn.disabled = true;
+      }
+
+      cal.appendChild(btn);
+    }
+  }
+
+  function changeMonth(delta) {
+    viewDate.setMonth(viewDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function dateNext() {
+    if (!state.date) { alert("Choose a day first."); return; }
+    renderTimeDropdown();
+    sendProgress("Date step completed");
+    go(6);
+  }
+
+  // --- Step 6: time ---
+  function timeToMinutes(t) {
+    const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return 0;
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const ap = match[3].toUpperCase();
+    if (ap === "PM" && h !== 12) h += 12;
+    if (ap === "AM" && h === 12) h = 0;
+    return h * 60 + m;
+  }
+
+  function renderTimeDropdown() {
+    const select = document.getElementById("timeSelect");
+    select.innerHTML = "";
+
+    const d = new Date(state.date + "T12:00:00");
+    const dow = d.getDay();
+    let times = TIME_SLOTS[dow] || [];
+
+    if (state.date === isoDate(new Date())) {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      times = times.filter(t => timeToMinutes(t) > nowMinutes);
+    }
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = times.length ? "Choose a time" : "No times left today";
+    select.appendChild(placeholder);
+
+    times.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = t;
+      select.appendChild(o);
+    });
+
+    if (state.time) select.value = state.time;
+  }
+
+  document.getElementById("timeSelect").addEventListener("change", e => {
+    state.time = e.target.value;
+    if (state.time) sendProgress("Time selected");
+  });
+
+  function timeNext() {
+    state.time = document.getElementById("timeSelect").value;
+    if (!state.time) { alert("Choose a time first."); return; }
+    sendProgress("Time step completed");
+    go(7);
+  }
+
+  // --- Step 7: vibe + note ---
+  document.getElementById("mood").addEventListener("change", e => {
+    state.mood = e.target.value;
+    sendProgress("Vibe selected");
+  });
+
+  document.getElementById("note").addEventListener("change", e => {
+    state.note = e.target.value.trim();
+    sendProgress("Message entered");
+  });
+
+  function getOutfit() {
+    const place = state.meeting.toLowerCase();
+    const mood = (state.mood || "Casual").toLowerCase();
+    const dressed = mood.includes("dressed");
+
+    if (place.includes("greater grounds") || place.includes("coffee")) {
+      return dressed
+        ? "A nice light top with jeans or trousers and comfortable shoes."
+        : "A cute top, jeans, and sneakers — nothing fussy.";
+    }
+    if (place.includes("papa's") || place.includes("ice cream")) {
+      return "Something casual and comfortable — there's a game room upstairs, so shoes you can move in.";
+    }
+    if (place.includes("botanica") || place.includes("garden")) {
+      return "A breathable top, shorts or a sundress, and comfortable walking shoes. It's outdoors, so dress for the weather.";
+    }
+    if (place.includes("old town square")) {
+      return dressed
+        ? "A nice top with jeans or a skirt, and shoes good for walking around."
+        : "Casual and comfortable — we'll be walking around, so easy shoes.";
+    }
+    if (place.includes("arcade")) {
+      return "Something casual and comfortable — we'll be on our feet playing games.";
+    }
+    return "Something light and comfortable. We'll figure out the vibe when we get there.";
+  }
+
+  // --- Add to calendar ---
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function toICSDate(d) {
+    return d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) +
+      "T" + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + "00Z";
+  }
+
+  function parseDateTime(dateStr, timeStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const mins = timeToMinutes(timeStr);
+    return new Date(y, m - 1, d, Math.floor(mins / 60), mins % 60, 0);
+  }
+
+  function icsEscape(str) {
+    return String(str).replace(/([,;])/g, "\\$1").replace(/\n/g, "\\n");
+  }
+
+  function buildICS() {
+    const start = parseDateTime(state.date, state.time);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//for-you//date-invite//EN",
+      "BEGIN:VEVENT",
+      `UID:date-${Date.now()}@foryou`,
+      `DTSTAMP:${toICSDate(new Date())}`,
+      `DTSTART:${toICSDate(start)}`,
+      `DTEND:${toICSDate(end)}`,
+      `SUMMARY:${icsEscape("Our date")}`,
+      `LOCATION:${icsEscape(state.meeting)}`,
+      `DESCRIPTION:${icsEscape(state.note || "Can't wait to see you.")}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ];
+    return lines.join("\r\n");
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, m => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[m]));
+  }
+
+  // --- Celebration on the finish step ---
+  function celebrate() {
+    for (let i = 0; i < 14; i++) {
+      const h = document.createElement("span");
+      h.className = "floating-heart";
+      h.textContent = "♥";
+      h.style.left = Math.random() * 100 + "vw";
+      h.style.setProperty("--drift", (Math.random() * 40 - 20) + "px");
+      h.style.animationDuration = (2.6 + Math.random() * 1.6) + "s";
+      h.style.fontSize = (14 + Math.random() * 14) + "px";
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 4500);
+    }
+  }
+
+  function finishForm() {
+    state.mood = document.getElementById("mood").value;
+    state.note = document.getElementById("note").value.trim();
+
+    const niceDate = new Date(state.date + "T12:00:00").toLocaleDateString(undefined, {
+      weekday: "long", month: "long", day: "numeric", year: "numeric"
+    });
+
+    document.getElementById("summary").innerHTML = `
+      <div><strong>Likes me:</strong> ${escapeHtml(state.like || "Yes")}</div>
+      <div><strong>Place:</strong> ${escapeHtml(state.meeting)}</div>
+      <div><strong>Day:</strong> ${escapeHtml(niceDate)}</div>
+      <div><strong>Time:</strong> ${escapeHtml(state.time)}</div>
+      <div><strong>Vibe:</strong> ${escapeHtml(state.mood)}</div>
+      <div><strong>Message:</strong> ${escapeHtml(state.note || "None")}</div>
+    `;
+
+    document.getElementById("outfitText").textContent = getOutfit();
+
+    const icsLink = document.getElementById("icsLink");
+    const blob = new Blob([buildICS()], { type: "text/calendar" });
+    icsLink.href = URL.createObjectURL(blob);
+
+    sendProgress("Finished");
+    go(8);
+    celebrate();
+  }
+
+  window.addEventListener("pagehide", () => {
+    sendProgress("Left the page");
+  });
+
+  renderCalendar();
+</script>
+</body>
+</html>
