@@ -179,11 +179,12 @@
     .grid { grid-template-columns: 1fr; }
     .card { padding: 22px; }
     .day { min-height: 42px; font-size: .9rem; }
-    .music-toggle { top: 10px; right: 10px; }
-  }
+}
 </style>
 </head>
 <body>
+
+<audio id="bgMusic" src="music.mp3" preload="auto" loop></audio>
 
 <div class="wrap">
   <div class="card">
@@ -193,7 +194,7 @@
       <h1>When I met you, I didn't know I'd end up liking you this much.</h1>
       <p id="heroSub" data-text="You became one of my favorite people without even trying."></p>
       <div class="buttons">
-        <button class="btn primary" onclick="startExperience()">Next</button>
+        <button class="btn primary" id="startBtn" type="button">Next</button>
       </div>
     </section>
 
@@ -392,62 +393,69 @@
     setTimeout(() => form.remove(), 2500);
   }
 
-  // --- Background music generated in the browser ---
-  let audioCtx = null;
-  let musicTimer = null;
-  let musicOn = false;
-  let melodyIndex = 0;
-  const melody = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
+  // --- Background music ---
+  const bgMusic = document.getElementById("bgMusic");
+  const MUSIC_START_SECONDS = 15;
+  let musicStarted = false;
 
-  function playSoftNote(freq) {
-    if (!audioCtx || audioCtx.state !== "running") return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const now = audioCtx.currentTime;
-
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 1.25);
+  function jumpToMusicStart() {
+    try {
+      if (Number.isFinite(bgMusic.duration) && bgMusic.duration > MUSIC_START_SECONDS) {
+        bgMusic.currentTime = MUSIC_START_SECONDS;
+      }
+    } catch (e) {}
   }
 
-// Automatically start audio when the page loads
-async function autoStartMusic() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  async function playMusic() {
+    if (musicStarted) return;
 
-  const tryPlay = async () => {
-    if (audioCtx.state === "suspended") {
-      await audioCtx.resume();
+    jumpToMusicStart();
+
+    try {
+      await bgMusic.play();
+      musicStarted = true;
+    } catch (e) {
+      // Most browsers block sound before the visitor interacts with the page.
+      // The first click/touch below starts it automatically with no music button.
     }
-    await startMusic();
-  };
-
-  try {
-    // Attempt to start music immediately
-    await tryPlay();
-  } catch (err) {
-    // If the browser blocks autoplay, start on the user's first click or touch
-    const enableAudioOnInteraction = async () => {
-      await tryPlay();
-      document.removeEventListener("click", enableAudioOnInteraction);
-      document.removeEventListener("touchstart", enableAudioOnInteraction);
-    };
-
-    document.addEventListener("click", enableAudioOnInteraction, { once: true });
-    document.addEventListener("touchstart", enableAudioOnInteraction, { once: true });
   }
-}
 
-// Trigger audio setup as soon as the DOM content is ready
-window.addEventListener("DOMContentLoaded", () => {
-  autoStartMusic();
-});
+  bgMusic.addEventListener("loadedmetadata", () => {
+    jumpToMusicStart();
+    playMusic();
+  });
+
+  // Try immediately.
+  window.addEventListener("DOMContentLoaded", () => {
+    playMusic();
+  });
+
+  // If autoplay is blocked, start automatically on the first normal interaction.
+  async function unlockMusic() {
+    jumpToMusicStart();
+    try {
+      await bgMusic.play();
+      musicStarted = true;
+      document.removeEventListener("click", unlockMusic, true);
+      document.removeEventListener("touchstart", unlockMusic, true);
+      document.removeEventListener("keydown", unlockMusic, true);
+    } catch (e) {}
+  }
+
+  document.addEventListener("click", unlockMusic, true);
+  document.addEventListener("touchstart", unlockMusic, true);
+  document.addEventListener("keydown", unlockMusic, true);
+
+  function startExperience() {
+    go(2);
+    playMusic().catch(() => {});
+  }
+
+  const startBtn = document.getElementById("startBtn");
+  if (startBtn) {
+    startBtn.addEventListener("click", startExperience);
+  }
+
   // --- Step 1: typewriter reveal for the opening line ---
   function typeText(el, text, speed) {
     el.textContent = "";
